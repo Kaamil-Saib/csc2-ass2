@@ -23,14 +23,14 @@ public class GenericsKbAVLApp {
         String fileName = "ExperimentData.txt";
         try {
             FileWriter file = new FileWriter(fileName);
-            for (int n = 5; n < 50000; n *= 2) {
-                // load data from GenericsKB.txt into AVL tree
-                loadKnowledgeBase("GenericsKB.txt", kbAVL, n);
-                // perform searches based on terms from GenericsKB-queries.txt
-                performSearches("GenericsKB-queries.txt", kbAVL);
-                // Instrumentation...
-                file.write(kbAVL.totalSearchOps() + "\t" + n + "\n");
-            }
+            // for (int n = 5; n < 50000; n *= 2) {
+            // load data from GenericsKB.txt into AVL tree
+            loadKnowledgeBase("GenericsKB.txt", kbAVL, 50000);
+            // perform searches based on terms from GenericsKB-queries.txt
+            performSearches("GenericsKB-queries.txt", kbAVL);
+            // Instrumentation...
+            // file.write(kbAVL.totalSearchOps() + "\t" + n + "\n");
+            // }
             file.close();
         } catch (IOException e) {
             System.out.println("An error occurred while writing to the file: " + e.getMessage());
@@ -54,13 +54,8 @@ public class GenericsKbAVLApp {
             int totalLines = 50000;
             Random random = new Random();
 
-            while (scanner.hasNextLine() && lineCount < sampleSize) {
-                // skip to random line
-                int randomLine = random.nextInt(totalLines);
-                for (int j = 0; j < randomLine && scanner.hasNextLine(); j++) {
-                    scanner.nextLine();
-                }
-                if (scanner.hasNextLine()) {
+            if (sampleSize == 50000) {
+                while (scanner.hasNextLine()) {
                     String line = scanner.nextLine();
                     String[] parts = line.split("\t");
                     String term = parts[0].trim();
@@ -68,6 +63,23 @@ public class GenericsKbAVLApp {
                     String confidenceScore = parts[2].trim();
                     kbAVL.insert(term, sentence + "\t" + confidenceScore);
                     lineCount++;
+                }
+            } else {
+                while (scanner.hasNextLine() && lineCount < sampleSize) {
+                    // skip to random line
+                    int randomLine = random.nextInt(totalLines);
+                    for (int j = 0; j < randomLine && scanner.hasNextLine(); j++) {
+                        scanner.nextLine();
+                    }
+                    if (scanner.hasNextLine()) {
+                        String line = scanner.nextLine();
+                        String[] parts = line.split("\t");
+                        String term = parts[0].trim();
+                        String sentence = parts[1].trim();
+                        String confidenceScore = parts[2].trim();
+                        kbAVL.insert(term, sentence + "\t" + confidenceScore);
+                        lineCount++;
+                    }
                 }
             }
             scanner.close();
@@ -91,9 +103,9 @@ public class GenericsKbAVLApp {
                 String searchTerm = scanner.nextLine().trim();
                 String result = kbAVL.search(searchTerm);
                 if (result != null) {
-                    // System.out.println(searchTerm + ": " + result);
+                    // Part 1 //System.out.println(searchTerm + ": " + result);
                 } else {
-                    // System.out.println("Term not found: " + searchTerm);
+                    // Part 1 //System.out.println("Term not found: " + searchTerm);
                 }
             }
             // printing out total number of ops
