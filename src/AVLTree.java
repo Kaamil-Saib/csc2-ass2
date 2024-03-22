@@ -1,11 +1,17 @@
 /**
- * AVL Tree
- * 
+ * Student Name: Kaamil Saib
+ * Student Number: SBXKAA001
+ * CSC2001F Assignment 2
+ */
+
+/**
  * @param <K> keys stored in the AVL tree
  * @param <V> value with keys
  */
 public class AVLTree<K extends Comparable<K>, V> {
-    public Node root;
+    private Node root;
+    private int InsertOpCount = 0;
+    private int SearchOpCount = 0;
 
     /**
      * checks if AVL tree is empty
@@ -17,10 +23,30 @@ public class AVLTree<K extends Comparable<K>, V> {
     }
 
     /**
+     * gets total number of ops done by search
+     * 
+     * @param node
+     * @return total number of ops done by insert
+     */
+    public int totalInsertOps() {
+        return InsertOpCount;
+    }
+
+    /**
+     * gets total number of ops done by search
+     * 
+     * @param node
+     * @return total number of ops done by search
+     */
+    public int totalSearchOps() {
+        return SearchOpCount;
+    }
+
+    /**
      * gets height of AVL tree
      * 
      * @param node
-     * @return
+     * @return height of node
      */
     private int height(Node node) {
         if (node == null)
@@ -31,8 +57,8 @@ public class AVLTree<K extends Comparable<K>, V> {
     /**
      * gets the balance factor
      * 
-     * @param node the node to calculate the balance factor for
-     * @return the balance factor of the node
+     * @param node
+     * @return balance factor of the node
      */
     private int getBalance(Node node) {
         if (node == null)
@@ -85,25 +111,65 @@ public class AVLTree<K extends Comparable<K>, V> {
      * @param value value associated with the key
      */
     public void insert(K key, V value) {
-        root = insertRec(root, key, value);
+        root = insertHelper(root, key, value);
     }
 
     /**
-     * recursively insert a key value pair into the AVL tree
+     * helper funtion for insert
+     * recursively insert a key value pair into AVL tree
      * 
      * @param node  node being processed
      * @param key   key to insert
      * @param value value with key
      * @return updated root node of the subtree
      */
-    private Node insertRec(Node node, K key, V value) {
+    private Node insertHelper(Node node, K key, V value) {
+        // normal BST insert
         if (node == null)
             return new Node(key, value);
 
-        if (key.compareTo(node.key) < 0)
-            node.left = insertRec(node.left, key, value);
-        else if (key.compareTo(node.key) > 0)
-            node.right = insertRec(node.right, key, value);
+        if (key.compareTo(node.key) < 0) {
+            InsertOpCount++; // counting ops
+            node.left = insertHelper(node.left, key, value);
+        } else if (key.compareTo(node.key) > 0) {
+            InsertOpCount++; // counting ops
+            node.right = insertHelper(node.right, key, value);
+        } else
+            return node;
+
+        node.height = 1 + Math.max(height(node.left), height(node.right));
+
+        // get balance factor
+        int balance = getBalance(node);
+
+        // if unbalanced
+
+        // left left
+        if (balance > 1 && key.compareTo(node.left.key) < 0) {
+            InsertOpCount++; // counting ops
+            return rightRotate(node);
+        }
+
+        // right rigth
+        if (balance < -1 && key.compareTo(node.right.key) > 0) {
+            InsertOpCount++; // counting ops
+            return leftRotate(node);
+        }
+
+        // left right
+        if (balance > 1 && key.compareTo(node.left.key) > 0) {
+            InsertOpCount++; // counting ops
+            node.left = leftRotate(node.left);
+            return rightRotate(node);
+        }
+
+        // rigth left
+        if (balance < -1 && key.compareTo(node.right.key) < 0) {
+            InsertOpCount++; // counting ops
+            node.right = rightRotate(node.right);
+            return leftRotate(node);
+        }
+
         return node;
     }
 
@@ -121,19 +187,22 @@ public class AVLTree<K extends Comparable<K>, V> {
      * recursively searches for a key in the AVL tree and returns itsassociated
      * value
      * 
-     * @param node node being processed
-     * @param key  key to search for
+     * @param node         node being processed
+     * @param key          key to search for
+     * @param compareCount counts the number of comparisons
      * @return value with the key, or null if the key is not found
      */
     private V searchRec(Node node, K key) {
-        if (node == null)
+        if (node == null) {
             return null;
-
-        if (key.equals(node.key))
+        }
+        if (key.equals(node.key)) {
+            SearchOpCount++; // counting ops
             return node.value;
-        else if (key.compareTo(node.key) < 0)
+        } else if (key.compareTo(node.key) < 0) {
+            SearchOpCount++; // counting ops
             return searchRec(node.left, key);
-        else
+        } else
             return searchRec(node.right, key);
     }
 

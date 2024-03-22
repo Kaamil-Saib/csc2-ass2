@@ -1,10 +1,17 @@
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.util.Scanner;
 
 /**
- * Application to read in GenericsKB.txt and store data items in an AVL Tree
+ * Student Name: Kaamil Saib
+ * Student Number: SBXKAA001
+ * CSC2001F Assignment 2
  */
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Random;
+import java.util.Scanner;
+
 public class GenericsKbAVLApp {
     /**
      * main method
@@ -12,155 +19,90 @@ public class GenericsKbAVLApp {
     public static void main(String[] args) {
         AVLTree<String, String> kbAVL = new AVLTree<>();
 
-        Scanner scanner = new Scanner(System.in);
-        int user_input = 0;
-
-        while (user_input != 5) {
-            System.out.println("Choose an action from the menu:\n" +
-                    "1. Load a knowledge base from a file\n" +
-                    "2. Add a new statement to the knowledge base\n" +
-                    "3. Search for an item in the knowledge base by term\n" +
-                    "4. Search for an item in the knowledge base by term and sentence\n" +
-                    "5. Quit\n" +
-                    "Enter your choice:");
-
-            user_input = scanner.nextInt();
-            scanner.nextLine();
-
-            switch (user_input) {
-                case 1:
-                    loadKnowledgeBase(kbAVL);
-                    break;
-
-                case 2:
-                    if (!kbAVL.isEmpty()) {
-                        addStatement(kbAVL, scanner);
-                    } else {
-                        System.out.println("\nKnowledge base has not been loaded.\n");
-                    }
-                    break;
-
-                case 3:
-                    if (!kbAVL.isEmpty()) {
-                        searchByTerm(kbAVL, scanner);
-                    } else {
-                        System.out.println("\nKnowledge base has not been loaded.\n");
-                    }
-                    break;
-
-                case 4:
-                    if (!kbAVL.isEmpty()) {
-                        searchByTermAndSentence(kbAVL, scanner);
-                    } else {
-                        System.out.println("\nKnowledge base has not been loaded.\n");
-                    }
-                    break;
-
-                case 5:
-                    break;
-
-                default:
-                    System.out.println("Invalid choice. Please enter a number between 1 and 5.");
+        // storing data from experiment
+        String fileName = "ExperimentData.txt";
+        try {
+            FileWriter file = new FileWriter(fileName);
+            for (int n = 5; n < 50000; n *= 2) {
+                // load data from GenericsKB.txt into AVL tree
+                loadKnowledgeBase("GenericsKB.txt", kbAVL, n);
+                // perform searches based on terms from GenericsKB-queries.txt
+                performSearches("GenericsKB-queries.txt", kbAVL);
+                // Instrumentation...
+                file.write(kbAVL.totalSearchOps() + "\t" + n + "\n");
             }
+            file.close();
+        } catch (IOException e) {
+            System.out.println("An error occurred while writing to the file: " + e.getMessage());
+            e.printStackTrace();
         }
-
-        scanner.close();
     }
 
     /**
      * load KB
      *
-     * @param kbAVL AVL tree to load KB into
+     * @param fileName   name of the file to load data from
+     * @param kbAVL      AVL tree to load KB into
+     * @param sampleSize size of sample we are taking from KB
      */
-    private static void loadKnowledgeBase(AVLTree<String, String> kbAVL) {
+    private static void loadKnowledgeBase(String fileName, AVLTree<String, String> kbAVL, int sampleSize) {
         try {
-            File file = new File("GenericsKB.txt");
-            Scanner fileScanner = new Scanner(file);
+            File file = new File(fileName);
+            Scanner scanner = new Scanner(file);
 
-            while (fileScanner.hasNextLine()) {
-                String line = fileScanner.nextLine();
-                String[] parts = line.split("\t");
-                if (parts.length == 3) {
+            int lineCount = 0;
+            int totalLines = 50000;
+            Random random = new Random();
+
+            while (scanner.hasNextLine() && lineCount < sampleSize) {
+                // skip to random line
+                int randomLine = random.nextInt(totalLines);
+                for (int j = 0; j < randomLine && scanner.hasNextLine(); j++) {
+                    scanner.nextLine();
+                }
+                if (scanner.hasNextLine()) {
+                    String line = scanner.nextLine();
+                    String[] parts = line.split("\t");
                     String term = parts[0].trim();
-                    String statement = parts[1].trim();
-                    double confidenceScore = Double.parseDouble(parts[2].trim());
-                    kbAVL.insert(term, statement + " (Confidence: " + confidenceScore + ")");
-                } else {
-                    System.out.println("Invalid format in line: " + line);
+                    String sentence = parts[1].trim();
+                    String confidenceScore = parts[2].trim();
+                    kbAVL.insert(term, sentence + "\t" + confidenceScore);
+                    lineCount++;
                 }
             }
-
-            fileScanner.close();
-            System.out.println("\nKnowledge base loaded successfully.\n");
+            scanner.close();
         } catch (FileNotFoundException e) {
-            System.out.println("File not found: GenericsKB.txt");
-        } catch (NumberFormatException e) {
-            System.out.println("Invalid confidence score format.");
+            System.out.println("File not found: " + fileName);
+            e.printStackTrace();
         }
     }
 
     /**
-     * add statement to KB
+     * perform searches and print the results
      *
-     * @param kbAVL   knowledge base AVL tree
-     * @param scanner read input
+     * @param fileName name of the file containing search terms
+     * @param kbAVL    AVL tree to search in
      */
-    private static void addStatement(AVLTree<String, String> kbAVL, Scanner scanner) {
-        System.out.println("Enter the term: ");
-        String term = scanner.nextLine().trim();
+    private static void performSearches(String fileName, AVLTree<String, String> kbAVL) {
+        try {
+            File file = new File(fileName);
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNextLine()) {
+                String searchTerm = scanner.nextLine().trim();
+                String result = kbAVL.search(searchTerm);
+                if (result != null) {
+                    // System.out.println(searchTerm + ": " + result);
+                } else {
+                    // System.out.println("Term not found: " + searchTerm);
+                }
+            }
+            // printing out total number of ops
+            System.out.println(kbAVL.totalInsertOps());
 
-        System.out.println("Enter the statement: ");
-        String statement = scanner.nextLine().trim();
-
-        System.out.println("Enter the confidence interval (0 to 1): ");
-        double confidenceInterval = scanner.nextDouble();
-
-        scanner.nextLine();
-
-        kbAVL.insert(term, statement + " (Confidence: " + confidenceInterval + ")");
-        System.out.println("\nStatement for term " + term + " has been added with confidence interval "
-                + confidenceInterval + ".\n");
-    }
-
-    /**
-     * search for item in KB by term
-     *
-     * @param kbAVL   knowledge baseAVL tree
-     * @param scanner read input
-     */
-    private static void searchByTerm(AVLTree<String, String> kbAVL, Scanner scanner) {
-        System.out.println("Enter the term to search: ");
-        String searchTerm = scanner.nextLine().trim();
-        String result = kbAVL.search(searchTerm);
-        if (result != null) {
-            System.out.println("\nResult: " + result + "\n");
-        } else {
-            System.out.println("\nTerm not found in the knowledge base.\n");
-        }
-    }
-
-    /**
-     * search for item in KB by term and sentence
-     *
-     * @param kbAVL   KB AVL tree
-     * @param scanner read input
-     */
-    private static void searchByTermAndSentence(AVLTree<String, String> kbAVL, Scanner scanner) {
-        System.out.println("Enter the term to search: ");
-        String searchTerm = scanner.nextLine().trim();
-
-        System.out.println("Enter the statement to search for: ");
-        String searchStatement = scanner.nextLine().trim();
-
-        boolean found = false;
-        String result = kbAVL.search(searchTerm);
-        if (result != null && result.contains(searchStatement)) {
-            System.out.println("\nResult: " + result + "\n");
-            found = true;
-        }
-
-        if (!found) {
-            System.out.println("\nTerm and statement not found in knowledge base.\n");
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found: " + fileName);
+            e.printStackTrace();
         }
     }
 }
